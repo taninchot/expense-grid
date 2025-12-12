@@ -1,6 +1,81 @@
 const STORAGE_KEY = "vexly_flow_data";
+const CURRENCY_KEY = "vexly_currency";
 let subs = [];
 let step = 1;
+let selectedCurrency = "USD";
+
+const currencies = {
+  USD: { symbol: "$", name: "US Dollar", rate: 1 },
+  EUR: { symbol: "€", name: "Euro", rate: 0.92 },
+  GBP: { symbol: "£", name: "British Pound", rate: 0.79 },
+  JPY: { symbol: "¥", name: "Japanese Yen", rate: 149.5 },
+  CNY: { symbol: "¥", name: "Chinese Yuan", rate: 7.24 },
+  KRW: { symbol: "₩", name: "South Korean Won", rate: 1320 },
+  INR: { symbol: "₹", name: "Indian Rupee", rate: 83.12 },
+  CAD: { symbol: "C$", name: "Canadian Dollar", rate: 1.36 },
+  AUD: { symbol: "A$", name: "Australian Dollar", rate: 1.53 },
+  CHF: { symbol: "CHF", name: "Swiss Franc", rate: 0.88 },
+  HKD: { symbol: "HK$", name: "Hong Kong Dollar", rate: 7.82 },
+  SGD: { symbol: "S$", name: "Singapore Dollar", rate: 1.34 },
+  SEK: { symbol: "kr", name: "Swedish Krona", rate: 10.42 },
+  NOK: { symbol: "kr", name: "Norwegian Krone", rate: 10.85 },
+  DKK: { symbol: "kr", name: "Danish Krone", rate: 6.87 },
+  NZD: { symbol: "NZ$", name: "New Zealand Dollar", rate: 1.64 },
+  MXN: { symbol: "MX$", name: "Mexican Peso", rate: 17.15 },
+  BRL: { symbol: "R$", name: "Brazilian Real", rate: 4.97 },
+  ZAR: { symbol: "R", name: "South African Rand", rate: 18.65 },
+  RUB: { symbol: "₽", name: "Russian Ruble", rate: 92.5 },
+  TRY: { symbol: "₺", name: "Turkish Lira", rate: 29.2 },
+  PLN: { symbol: "zł", name: "Polish Zloty", rate: 3.98 },
+  THB: { symbol: "฿", name: "Thai Baht", rate: 35.2 },
+  IDR: { symbol: "Rp", name: "Indonesian Rupiah", rate: 15650 },
+  MYR: { symbol: "RM", name: "Malaysian Ringgit", rate: 4.72 },
+  PHP: { symbol: "₱", name: "Philippine Peso", rate: 55.8 },
+  VND: { symbol: "₫", name: "Vietnamese Dong", rate: 24500 },
+  TWD: { symbol: "NT$", name: "Taiwan Dollar", rate: 31.5 },
+  AED: { symbol: "د.إ", name: "UAE Dirham", rate: 3.67 },
+  SAR: { symbol: "﷼", name: "Saudi Riyal", rate: 3.75 },
+  ILS: { symbol: "₪", name: "Israeli Shekel", rate: 3.68 },
+  CZK: { symbol: "Kč", name: "Czech Koruna", rate: 22.8 },
+  HUF: { symbol: "Ft", name: "Hungarian Forint", rate: 356 },
+  RON: { symbol: "lei", name: "Romanian Leu", rate: 4.57 },
+  BGN: { symbol: "лв", name: "Bulgarian Lev", rate: 1.8 },
+  HRK: { symbol: "kn", name: "Croatian Kuna", rate: 6.93 },
+  CLP: { symbol: "CLP$", name: "Chilean Peso", rate: 880 },
+  COP: { symbol: "COL$", name: "Colombian Peso", rate: 3950 },
+  ARS: { symbol: "ARS$", name: "Argentine Peso", rate: 365 },
+  PEN: { symbol: "S/", name: "Peruvian Sol", rate: 3.72 },
+  EGP: { symbol: "E£", name: "Egyptian Pound", rate: 30.9 },
+  NGN: { symbol: "₦", name: "Nigerian Naira", rate: 785 },
+  KES: { symbol: "KSh", name: "Kenyan Shilling", rate: 153 },
+  PKR: { symbol: "₨", name: "Pakistani Rupee", rate: 278 },
+  BDT: { symbol: "৳", name: "Bangladeshi Taka", rate: 110 },
+  UAH: { symbol: "₴", name: "Ukrainian Hryvnia", rate: 37.5 },
+};
+
+function formatCurrency(amountInUSD, decimals = 2) {
+  const { symbol, rate } = currencies[selectedCurrency];
+  const convertedAmount = amountInUSD * rate;
+  const decimalPlaces = rate > 100 ? 0 : decimals;
+
+  return `${symbol}${convertedAmount.toFixed(decimalPlaces)}`;
+}
+
+function formatCurrencyShort(amountInUSD) {
+  const { symbol, rate } = currencies[selectedCurrency];
+  const convertedAmount = amountInUSD * rate;
+
+  if (convertedAmount >= 1_000_000) {
+    return `${symbol}${(convertedAmount / 1_000_000).toFixed(1)}M`;
+  }
+  if (convertedAmount >= 10_000) {
+    return `${symbol}${(convertedAmount / 1_000).toFixed(0)}k`;
+  }
+  if (rate > 100) {
+    return `${symbol}${Math.round(convertedAmount)}`;
+  }
+  return `${symbol}${convertedAmount.toFixed(0)}`;
+}
 
 // prettier-ignore
 const colors = [
@@ -30,7 +105,9 @@ function toMonthly(sub) {
 
 document.addEventListener("DOMContentLoaded", () => {
   load();
+  loadCurrency();
   initColorPicker();
+  initCurrencySelector();
   renderList();
   // default to today
   document.getElementById("date").value = new Date().toISOString().split("T")[0];
@@ -75,6 +152,33 @@ function save() {
   renderList();
 }
 
+function loadCurrency() {
+  const savedCurrency = localStorage.getItem(CURRENCY_KEY);
+  const isValidCurrency = savedCurrency && currencies[savedCurrency];
+  selectedCurrency = isValidCurrency ? savedCurrency : "USD";
+}
+
+function saveCurrency(currencyCode) {
+  selectedCurrency = currencyCode;
+  localStorage.setItem(CURRENCY_KEY, currencyCode);
+  renderList();
+  if (step === 2) renderGrid();
+  if (step === 3) renderStats();
+}
+
+function initCurrencySelector() {
+  const selector = document.getElementById("currency-selector");
+  if (!selector) return;
+
+  const options = Object.entries(currencies).map(([code, { symbol, name }]) => {
+    const isSelected = code === selectedCurrency ? "selected" : "";
+    return `<option value="${code}" ${isSelected}>${symbol} ${code} - ${name}</option>`;
+  });
+
+  selector.innerHTML = options.join("");
+  selector.addEventListener("change", (e) => saveCurrency(e.target.value));
+}
+
 function renderList() {
   const list = document.getElementById("sub-list-container");
   const empty = document.getElementById("empty-state");
@@ -108,7 +212,7 @@ function renderList() {
           ${iconHtml(sub, "w-10 h-10")}
           <div class="min-w-0">
             <div class="font-bold text-slate-900 truncate">${sub.name}</div>
-            <div class="text-xs text-slate-500">$${sub.price} / ${sub.cycle}</div>
+            <div class="text-xs text-slate-500">${formatCurrency(sub.price)} / ${sub.cycle}</div>
           </div>
         </div>
         <div class="flex items-center gap-1">
@@ -219,8 +323,8 @@ function renderGrid() {
     })
     .sort((a, b) => b.cost - a.cost);
 
-  totalEl.innerText = `$${total.toFixed(2)}`;
-  yearlyEl.innerText = `$${(total * 12).toFixed(2)}`;
+  totalEl.innerText = formatCurrency(total);
+  yearlyEl.innerText = formatCurrency(total * 12);
 
   if (!items.length) {
     grid.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400">Add subscriptions to see visualization</div>';
@@ -271,7 +375,7 @@ function renderGrid() {
       content = `
         <div class="flex flex-col items-center justify-center h-full w-full gap-1">
           ${iconHtml(r, `w-[${sz}px] h-[${sz}px]`)}
-          <div class="font-bold text-slate-900" style="font-size:${ps}px">$${r.cost.toFixed(0)}</div>
+          <div class="font-bold text-slate-900" style="font-size:${ps}px">${formatCurrencyShort(r.cost)}</div>
         </div>`;
     } else if (isSmall) {
       const sz = Math.max(16, Math.min(iconSz, innerW * 0.35, innerH * 0.25));
@@ -282,7 +386,7 @@ function renderGrid() {
           ${iconHtml(r, `w-[${sz}px] h-[${sz}px]`)}
           <div class="min-w-0 w-full">
             <div class="font-semibold text-slate-900 treemap-cell-name" style="font-size:${ts}px">${r.name}</div>
-            <div class="font-black text-slate-900" style="font-size:${ps}px">$${r.cost.toFixed(0)}</div>
+            <div class="font-black text-slate-900" style="font-size:${ps}px">${formatCurrencyShort(r.cost)}</div>
           </div>
         </div>`;
     } else {
@@ -296,8 +400,8 @@ function renderGrid() {
         </div>
         <div class="mt-auto min-w-0">
           <div class="font-bold text-slate-900 treemap-cell-name" style="font-size:${titleSize}px">${r.name}</div>
-          <div class="font-black text-slate-900 tracking-tight leading-none" style="font-size:${priceSize}px">$${r.cost.toFixed(2)}</div>
-          ${showYearly ? `<div class="text-xs font-medium text-slate-500 mt-1">~$${(r.cost * 12).toFixed(0)}/yr</div>` : ""}
+          <div class="font-black text-slate-900 tracking-tight leading-none" style="font-size:${priceSize}px">${formatCurrency(r.cost)}</div>
+          ${showYearly ? `<div class="text-xs font-medium text-slate-500 mt-1">~${formatCurrencyShort(r.cost * 12)}/yr</div>` : ""}
         </div>`;
     }
 
@@ -365,9 +469,9 @@ function renderStats() {
   subs.forEach((s) => (total += toMonthly(s)));
   const yearly = total * 12;
 
-  document.getElementById("final-yearly").innerText = `$${yearly.toFixed(0)}`;
+  document.getElementById("final-yearly").innerText = formatCurrency(yearly, 0);
   document.getElementById("final-count").innerText = subs.length;
-  document.getElementById("savings-estimate").innerText = `$${yearly.toFixed(0)}`;
+  document.getElementById("savings-estimate").innerText = formatCurrency(yearly, 0);
 }
 
 function iconHtml(sub, cls) {
@@ -506,4 +610,28 @@ function openModal() {
 
 function closeModal() {
   hideModal();
+}
+
+const settingsBackdrop = document.getElementById("settings-backdrop");
+const settingsPanel = document.getElementById("settings-panel");
+const settingsInner = settingsPanel?.querySelector("div");
+
+function openSettings() {
+  settingsBackdrop.classList.remove("hidden");
+  settingsPanel.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    settingsBackdrop.classList.remove("opacity-0");
+    settingsInner.classList.remove("translate-y-full", "sm:scale-95", "opacity-0");
+    settingsInner.classList.add("translate-y-0", "sm:translate-y-0", "sm:scale-100", "opacity-100");
+  });
+}
+
+function closeSettings() {
+  settingsBackdrop.classList.add("opacity-0");
+  settingsInner.classList.remove("translate-y-0", "sm:translate-y-0", "sm:scale-100", "opacity-100");
+  settingsInner.classList.add("translate-y-full", "sm:scale-95", "opacity-0");
+  setTimeout(() => {
+    settingsBackdrop.classList.add("hidden");
+    settingsPanel.classList.add("hidden");
+  }, 300);
 }
