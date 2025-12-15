@@ -2,9 +2,7 @@ let subs = [];
 let step = 1;
 let selectedCurrency = "USD";
 
-// exchange rates are approximate, pulled from xe.com dec 2024
-// TODO: maybe fetch live rates from an API at some point?
-const currencies = {
+window.currencies = {
   USD: { symbol: "$", name: "US Dollar", rate: 1 },
   EUR: { symbol: "€", name: "Euro", rate: 0.92 },
   GBP: { symbol: "£", name: "British Pound", rate: 0.79 },
@@ -407,7 +405,8 @@ function handleFormSubmit(evt) {
   hideModal();
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async () => {
+  await window.initRates();
   load();
   loadCurrency();
   initColorPicker();
