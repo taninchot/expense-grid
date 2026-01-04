@@ -31,6 +31,7 @@ class Treemap {
         price: item.price,
         currency: item.currency,
         cycle: item.cycle,
+        customIcon: item.customIcon,
         cost: item.cost,
         val: item.val,
         idx: item.idx,
@@ -114,6 +115,7 @@ class Treemap {
           price: item.price,
           currency: item.currency,
           cycle: item.cycle,
+          customIcon: item.customIcon,
           cost: item.cost,
           val: item.val,
           idx: item.idx,
@@ -132,6 +134,7 @@ class Treemap {
           price: item.price,
           currency: item.currency,
           cycle: item.cycle,
+          customIcon: item.customIcon,
           cost: item.cost,
           val: item.val,
           idx: item.idx,
@@ -175,6 +178,7 @@ function renderGrid() {
       price: sub.price,
       currency: sub.currency,
       cycle: sub.cycle,
+      customIcon: sub.customIcon,
       cost: monthlyCost
     });
   }
@@ -202,9 +206,9 @@ function renderGrid() {
       color: items[i].color,
       price: items[i].price,
       currency: items[i].currency,
-      cycle: items[i].cycle,
       cost: items[i].cost,
       val: items[i].cost,
+      customIcon: items[i].customIcon,
       idx: i
     });
   }

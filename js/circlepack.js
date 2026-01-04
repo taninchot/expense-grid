@@ -228,37 +228,29 @@ function renderCirclePack() {
 
     let content = "";
 
-    const logoHtml = logoUrl ? `
-      <img src="${logoUrl}" alt="${item.name}"
-        class="object-contain rounded-md shrink-0"
-        style="width: ${logoSize}px; height: ${logoSize}px;"
-        onerror="this.style.display='none';" />
-    ` : "";
+    const iconRendered = iconHtml(item, "shrink-0");
 
     if (showPrice && showName) {
       content = `
-        <div class="flex flex-col items-center justify-center gap-0.5 text-center px-1">
-          ${logoHtml}
+        <div class="flex flex-col items-center justify-center gap-0.5 text-center px-1 overflow-hidden">
+          <div style="width: ${logoSize}px; height: ${logoSize}px;" class="flex items-center justify-center">${iconRendered}</div>
           <div class="font-semibold text-slate-800 truncate max-w-full" style="font-size: ${fontSize}px;">${item.name}</div>
           <div class="font-bold text-slate-900" style="font-size: ${priceSize}px;">${formatCurrencyShort(item.cost)}</div>
         </div>
       `;
     } else if (showName) {
       content = `
-        <div class="flex flex-col items-center justify-center gap-0.5 text-center px-1">
-          ${logoHtml}
+        <div class="flex flex-col items-center justify-center gap-0.5 text-center px-1 overflow-hidden">
+          <div style="width: ${logoSize}px; height: ${logoSize}px;" class="flex items-center justify-center">${iconRendered}</div>
           <div class="font-semibold text-slate-800 truncate max-w-full" style="font-size: ${fontSize}px;">${item.name}</div>
         </div>
       `;
-    } else if (logoUrl) {
-      content = `
-        <img src="${logoUrl}" alt="${item.name}"
-          class="object-contain rounded-sm"
-          style="width: ${logoSize}px; height: ${logoSize}px;"
-          onerror="this.parentElement.innerHTML='<span style=\\'font-size:${fontSize}px\\' class=\\'font-bold text-slate-700\\'>${item.name.charAt(0)}</span>';" />
-      `;
     } else {
-      content = `<span class="font-bold text-slate-700" style="font-size: ${fontSize}px;">${item.name.charAt(0)}</span>`;
+      content = `
+        <div style="width: ${logoSize}px; height: ${logoSize}px;" class="flex items-center justify-center">
+          ${iconRendered}
+        </div>
+      `;
     }
 
     html += `

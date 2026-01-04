@@ -34,6 +34,7 @@ function openModal() {
   document.getElementById("sub-form").reset();
   document.getElementById("entry-id").value = "";
   document.getElementById("sub-currency").value = selectedCurrency;
+  if (typeof clearCustomIcon === "function") clearCustomIcon();
   updateFavicon("");
   pickColor(randColor().id);
 
@@ -59,6 +60,7 @@ function openModalWithPreset(presetIdx) {
   document.getElementById("cycle").value = preset.cycle;
   document.getElementById("url").value = preset.domain;
 
+  if (typeof clearCustomIcon === "function") clearCustomIcon();
   updateFavicon(preset.domain);
   pickColor(preset.color);
 

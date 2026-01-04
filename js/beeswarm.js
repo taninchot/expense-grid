@@ -161,10 +161,7 @@ function renderBeeswarm() {
           class="w-full h-full rounded-full shadow-md sm:shadow-lg transition-all duration-200 hover:scale-110 hover:shadow-xl flex items-center justify-center overflow-hidden"
           style="background: linear-gradient(135deg, ${color.bg} 0%, ${color.accent} 100%); border: 2px solid ${color.accent};"
         >
-          ${logoUrl
-            ? `<img src="${logoUrl}" alt="${item.name}" class="w-3/4 h-3/4 object-contain rounded-sm sm:rounded-md" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><span class="text-[10px] sm:text-sm font-bold hidden items-center justify-center" style="color: ${color.accent};">${item.name.charAt(0)}</span>`
-            : `<span class="text-[10px] sm:text-sm font-bold" style="color: ${color.accent};">${item.name.charAt(0)}</span>`
-          }
+          ${iconHtml(item, "w-full h-full")}
         </div>
         <div class="beeswarm-tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
           <div class="bg-slate-900 text-white text-[10px] sm:text-xs rounded-lg px-2 py-1.5 sm:px-3 sm:py-2 whitespace-nowrap shadow-xl">

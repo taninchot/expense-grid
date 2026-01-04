@@ -116,6 +116,35 @@ input[type="number"]::-webkit-outer-spin-button {
   z-index: 100;
 }
 
+
 .circlepack-bubble.active .circlepack-tooltip {
   opacity: 1;
 }
+
+/* Custom Searchable Dropdown */
+.searchable-dropdown-menu {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.searchable-dropdown-menu.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dropdown-option {
+  transition: all 0.15s ease;
+}
+
+.dropdown-option:hover {
+  background-color: #f1f5f9;
+}
+
+.dropdown-option.selected {
+  background-color: #eef2ff;
+  color: #4f46e5;
+}
+

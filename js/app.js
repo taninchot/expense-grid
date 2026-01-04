@@ -2,6 +2,8 @@ let subs = [];
 let step = 1;
 let selectedCurrency = "USD";
 let currentView = "treemap";
+window.subCurrencyDropdown = null;
+window.settingsCurrencyDropdown = null;
 
 window.currencies = {
   USD: { symbol: "$", name: "US Dollar", rate: 1 },
@@ -167,6 +169,10 @@ function toMonthly(sub) {
 }
 
 function iconHtml(sub, className) {
+  if (sub.customIcon) {
+    return '<img src="' + sub.customIcon + '" class="' + className + ' object-cover rounded-lg shrink-0" crossorigin="anonymous">';
+  }
+
   if (!sub.url) {
     return '<span class="iconify ' + className + ' text-slate-400 shrink-0" data-icon="ph:cube-bold"></span>';
   }
@@ -324,16 +330,20 @@ function updateEmailPreview() {
   if (sorted[0]) {
     const name1 = document.getElementById("preview-name-1");
     const price1 = document.getElementById("preview-price-1");
+    const icon1 = document.getElementById("preview-icon-1");
     if (name1) name1.innerText = sorted[0].name;
     if (price1) price1.innerText = formatCurrency(toMonthly(sorted[0]));
+    if (icon1) icon1.innerHTML = iconHtml(sorted[0], "w-full h-full");
   }
 
   const previewRow2 = document.getElementById("preview-sub-2");
   if (sorted[1]) {
     const name2 = document.getElementById("preview-name-2");
     const price2 = document.getElementById("preview-price-2");
+    const icon2 = document.getElementById("preview-icon-2");
     if (name2) name2.innerText = sorted[1].name;
     if (price2) price2.innerText = formatCurrency(toMonthly(sorted[1]));
+    if (icon2) icon2.innerHTML = iconHtml(sorted[1], "w-full h-full");
     if (previewRow2) previewRow2.style.display = "flex";
   } else {
     if (previewRow2) previewRow2.style.display = "none";
@@ -405,11 +415,24 @@ function editSub(subId) {
   document.getElementById("entry-id").value = sub.id;
   document.getElementById("name").value = sub.name;
   document.getElementById("price").value = sub.price;
-  document.getElementById("sub-currency").value = sub.currency || selectedCurrency;
+  if (subCurrencyDropdown) {
+    subCurrencyDropdown.setValue(sub.currency || selectedCurrency, false);
+  }
   document.getElementById("cycle").value = sub.cycle;
   document.getElementById("url").value = sub.url || "";
+  document.getElementById("custom-icon").value = sub.customIcon || "";
 
-  updateFavicon(sub.url || "");
+  if (sub.customIcon) {
+    const preview = document.getElementById("favicon-preview");
+    preview.innerHTML = '<img src="' + sub.customIcon + '" class="w-full h-full object-cover" crossorigin="anonymous">';
+    document.getElementById("clear-custom-icon").classList.remove("hidden");
+    document.getElementById("clear-custom-icon").classList.add("flex");
+  } else {
+    updateFavicon(sub.url || "");
+    document.getElementById("clear-custom-icon").classList.add("hidden");
+    document.getElementById("clear-custom-icon").classList.remove("flex");
+  }
+
   pickColor(sub.color || randColor().id);
 
   document.getElementById("modal-title").innerText = "Edit Subscription";
@@ -447,6 +470,8 @@ function pickColor(colorId) {
 let faviconDebounce = null;
 
 function updateFavicon(urlInput) {
+  if (document.getElementById("custom-icon").value) return;
+  
   clearTimeout(faviconDebounce);
 
   faviconDebounce = setTimeout(function() {
@@ -467,41 +492,74 @@ function updateFavicon(urlInput) {
   }, 400);
 }
 
-function initCurrencySelector() {
-  const dropdown = document.getElementById("currency-selector");
-  if (!dropdown) return;
+function triggerIconUpload() {
+  document.getElementById("icon-upload").click();
+}
 
-  let html = "";
-  const currencyCodes = Object.keys(currencies);
+function handleIconUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
 
-  for (let i = 0; i < currencyCodes.length; i++) {
-    const code = currencyCodes[i];
-    const curr = currencies[code];
-    const selected = (code === selectedCurrency) ? " selected" : "";
-    html += '<option value="' + code + '"' + selected + '>' + curr.symbol + ' ' + code + ' - ' + curr.name + '</option>';
+  // check file size
+  if (file.size > 1024 * 1024) {
+    alert("Icon is too large. Please use an image under 1MB.");
+    return;
   }
 
-  dropdown.innerHTML = html;
-  dropdown.addEventListener("change", function(e) {
-    saveCurrency(e.target.value);
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    document.getElementById("custom-icon").value = dataUrl;
+    
+    const preview = document.getElementById("favicon-preview");
+    preview.innerHTML = '<img src="' + dataUrl + '" class="w-full h-full object-cover" crossorigin="anonymous">';
+    
+    document.getElementById("clear-custom-icon").classList.remove("hidden");
+    document.getElementById("clear-custom-icon").classList.add("flex");
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearCustomIcon(event) {
+  if (event) event.stopPropagation();
+  
+  document.getElementById("custom-icon").value = "";
+  document.getElementById("icon-upload").value = "";
+  document.getElementById("clear-custom-icon").classList.add("hidden");
+  document.getElementById("clear-custom-icon").classList.remove("flex");
+  
+  updateFavicon(document.getElementById("url").value);
+}
+
+function initCurrencySelector() {
+  const currencyData = Object.entries(currencies).map(([code, curr]) => ({
+    value: code,
+    label: `${curr.symbol} ${code}`,
+    sublabel: curr.name
+  }));
+
+  settingsCurrencyDropdown = new SearchableDropdown({
+    id: "currency-selector",
+    data: currencyData,
+    value: selectedCurrency,
+    onSelect: (value) => {
+      saveCurrency(value);
+    }
   });
 }
 
 function initFormCurrencySelector() {
-  const dropdown = document.getElementById("sub-currency");
-  if (!dropdown) return;
+  const currencyData = Object.entries(currencies).map(([code, curr]) => ({
+    value: code,
+    label: `${curr.symbol} ${code}`,
+    sublabel: curr.name
+  }));
 
-  let html = "";
-  const currencyCodes = Object.keys(currencies);
-
-  for (let i = 0; i < currencyCodes.length; i++) {
-    const code = currencyCodes[i];
-    const curr = currencies[code];
-    html += '<option value="' + code + '">' + curr.symbol + ' ' + code + '</option>';
-  }
-
-  dropdown.innerHTML = html;
-  dropdown.value = selectedCurrency;
+  subCurrencyDropdown = new SearchableDropdown({
+    id: "sub-currency",
+    data: currencyData,
+    value: selectedCurrency
+  });
 }
 
 function handleFormSubmit(evt) {
@@ -516,6 +574,7 @@ function handleFormSubmit(evt) {
     currency: document.getElementById("sub-currency").value,
     cycle: document.getElementById("cycle").value,
     url: document.getElementById("url").value,
+    customIcon: document.getElementById("custom-icon").value || null,
     color: document.getElementById("selected-color").value || randColor().id,
     date: document.getElementById("date").value || ""
   };

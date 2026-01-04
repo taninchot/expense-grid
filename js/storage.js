@@ -8,6 +8,11 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       subs = JSON.parse(raw);
+      // Auto-switch to most common currency on load
+      const common = getMostCommonCurrency();
+      if (common && common !== selectedCurrency) {
+        saveCurrency(common, false);
+      }
     }
   } catch (err) {
     // probably corrupted data, just start fresh
@@ -18,7 +23,31 @@ function load() {
 
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(subs));
-  renderList();
+  
+  // Auto-switch to most common currency when saving new data
+  const common = getMostCommonCurrency();
+  if (common && common !== selectedCurrency) {
+    saveCurrency(common, false);
+  } else {
+    renderList();
+  }
+}
+
+function getMostCommonCurrency() {
+  if (subs.length === 0) return null;
+  const counts = {};
+  let maxCount = 0;
+  let mostCommon = null;
+
+  for (const sub of subs) {
+    const code = sub.currency || "USD";
+    counts[code] = (counts[code] || 0) + 1;
+    if (counts[code] > maxCount) {
+      maxCount = counts[code];
+      mostCommon = code;
+    }
+  }
+  return mostCommon;
 }
 
 function loadCurrency() {
@@ -32,12 +61,21 @@ function loadCurrency() {
   }
 }
 
-function saveCurrency(code) {
+function saveCurrency(code, userInitiated = true) {
   selectedCurrency = code;
   localStorage.setItem(CURRENCY_KEY, code);
 
+  // Sync dropdown UI if it exists
+  if (window.settingsCurrencyDropdown) {
+    window.settingsCurrencyDropdown.setValue(code, false);
+  }
+
   renderList();
-  if (step === 2) renderGrid();
+  if (step === 2) {
+    renderGrid();
+    renderBeeswarm();
+    renderCirclePack();
+  }
   if (step === 3) renderStats();
 }
 
